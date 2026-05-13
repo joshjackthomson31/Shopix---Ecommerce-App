@@ -11,8 +11,9 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, 'Please add an email'],
-      unique: true,  // No two users can have same email
+      unique: true,     // No two users can have same email
       lowercase: true,  // Convert to lowercase automatically
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
     },
     password: {
       type: String,

@@ -28,8 +28,13 @@ const app = express();
 // ============ MIDDLEWARE ============
 // Middleware are functions that run BEFORE your routes
 
-// Enable CORS (allows frontend on different port to call our API)
-app.use(cors());
+// Enable CORS — restrict to the configured frontend origin (never allow all in production)
+app.use(
+  cors({
+    origin: config.corsOrigin,
+    credentials: true,
+  })
+);
 
 // Parse JSON bodies (when client sends JSON data, we can read it)
 app.use(express.json());

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Alert } from '../components/ui';
 
@@ -13,6 +13,8 @@ const RegisterPage = () => {
 
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,13 +28,13 @@ const RegisterPage = () => {
     setLoading(true);
 
     const result = await register(name, email, password);
-    
+
     if (result.success) {
-      navigate('/');
+      navigate(`/${redirect.replace(/^\//, '')}`);
     } else {
       setError(result.error || 'Registration failed');
     }
-    
+
     setLoading(false);
   };
 
@@ -115,7 +117,7 @@ const RegisterPage = () => {
 
         <p className="text-center text-gray-600 mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-indigo-600 hover:underline">
+          <Link to={redirect !== '/' ? `/login?redirect=${redirect}` : '/login'} className="text-indigo-600 hover:underline">
             Sign In
           </Link>
         </p>

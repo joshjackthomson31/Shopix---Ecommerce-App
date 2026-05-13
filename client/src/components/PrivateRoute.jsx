@@ -3,10 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import { LoadingWrapper } from './ui';
 
 // Protects routes that require authentication
+// Waits for server-side token validation before making a redirect decision
 export const PrivateRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, authChecked } = useAuth();
 
-  if (loading) {
+  // Still validating token against server — show spinner to avoid flash redirect
+  if (!authChecked) {
     return <LoadingWrapper loading={true}><div /></LoadingWrapper>;
   }
 
@@ -15,9 +17,9 @@ export const PrivateRoute = ({ children }) => {
 
 // Protects routes that require admin access
 export const AdminRoute = ({ children }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, authChecked } = useAuth();
 
-  if (loading) {
+  if (!authChecked) {
     return <LoadingWrapper loading={true}><div /></LoadingWrapper>;
   }
 
