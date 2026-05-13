@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Alert } from '../components/ui';
 
@@ -11,6 +11,8 @@ const LoginPage = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,13 +20,13 @@ const LoginPage = () => {
     setLoading(true);
 
     const result = await login(email, password);
-    
+
     if (result.success) {
-      navigate('/');
+      navigate(`/${redirect.replace(/^\//, '')}`);
     } else {
       setError(result.error || 'Login failed');
     }
-    
+
     setLoading(false);
   };
 
@@ -77,7 +79,7 @@ const LoginPage = () => {
 
         <p className="text-center text-gray-600 mt-4">
           New Customer?{' '}
-          <Link to="/register" className="text-indigo-600 hover:underline">
+          <Link to={redirect !== '/' ? `/register?redirect=${redirect}` : '/register'} className="text-indigo-600 hover:underline">
             Register
           </Link>
         </p>

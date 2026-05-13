@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import safeParse from '../utils/safeParse';
 
 const CartContext = createContext();
 
@@ -12,31 +13,28 @@ export const useCart = () => {
 
 export const CartProvider = ({ children }) => {
   // Initialize from localStorage synchronously
-  const [cartItems, setCartItems] = useState(() => {
-    const storedCart = localStorage.getItem('cartItems');
-    return storedCart ? JSON.parse(storedCart) : [];
-  });
+  const [cartItems, setCartItems] = useState(() => safeParse('cartItems', []));
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // Add item to cart
+  // Add item to cart — quantity is capped at countInStock to prevent over-ordering
   const addToCart = (product, qty = 1) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item._id === product._id);
 
       if (existingItem) {
-        // Update quantity if item exists
+        const newQty = Math.min(existingItem.qty + qty, product.countInStock);
         return prevItems.map((item) =>
           item._id === product._id
-            ? { ...item, qty: item.qty + qty }
+            ? { ...item, qty: newQty }
             : item
         );
       } else {
-        // Add new item
-        return [...prevItems, { ...product, qty }];
+        const cappedQty = Math.min(qty, product.countInStock);
+        return [...prevItems, { ...product, qty: cappedQty }];
       }
     });
   };

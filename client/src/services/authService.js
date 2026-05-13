@@ -17,6 +17,12 @@ const authService = {
     return response.data;
   },
 
+  // Validate the stored token by fetching the current user's profile
+  getProfile: async () => {
+    const response = await api.get('/auth/profile');
+    return response.data;
+  },
+
   // Get all users (admin)
   getAll: async () => {
     const response = await api.get('/auth/users');

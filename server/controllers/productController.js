@@ -1,38 +1,58 @@
 import Product from '../models/Product.js';
 import catchAsync from '../utils/catchAsync.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import escapeRegex from '../utils/escapeRegex.js';
 
 // @desc    Get all products (with search & category filter)
 // @route   GET /api/products
 // @route   GET /api/products?keyword=iphone&category=Electronics
 // @access  Public
 export const getProducts = catchAsync(async (req, res) => {
-  const { keyword, category } = req.query;
-  
+  const { keyword, category, page, limit } = req.query;
+
   // Build query object
   const query = {};
-  
-  // Search by keyword (name or brand)
+
+  // Search by keyword (name or brand) — escape user input to prevent ReDoS
   if (keyword) {
+    const safeKeyword = escapeRegex(keyword);
     query.$or = [
-      { name: { $regex: keyword, $options: 'i' } },
-      { brand: { $regex: keyword, $options: 'i' } },
+      { name: { $regex: safeKeyword, $options: 'i' } },
+      { brand: { $regex: safeKeyword, $options: 'i' } },
     ];
   }
-  
+
   // Filter by category
   if (category && category !== 'All') {
     query.category = category;
   }
-  
-  const products = await Product.find(query);
-  
+
+  // Pagination — optional; omit page/limit to get all products (backward compatible)
+  const pageNum = parseInt(page, 10) || null;
+  const limitNum = parseInt(limit, 10) || null;
+  const usePagination = pageNum && limitNum;
+
+  const totalCount = await Product.countDocuments(query);
+
+  let productQuery = Product.find(query);
+  if (usePagination) {
+    const skip = (pageNum - 1) * limitNum;
+    productQuery = productQuery.skip(skip).limit(limitNum);
+  }
+
+  const products = await productQuery;
+
   // Get unique categories for filter dropdown
   const categories = await Product.distinct('category');
-  
+
   res.status(200).json({
     success: true,
     count: products.length,
+    total: totalCount,
+    ...(usePagination && {
+      page: pageNum,
+      pages: Math.ceil(totalCount / limitNum),
+    }),
     categories: ['All', ...categories],
     data: products,
   });

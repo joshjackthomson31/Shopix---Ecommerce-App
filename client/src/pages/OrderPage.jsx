@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { FiCheckCircle, FiTruck, FiCreditCard } from 'react-icons/fi';
 import { useOrders } from '../hooks';
 import { getImageUrl } from '../utils/imageUrl';
@@ -7,12 +7,13 @@ import { LoadingWrapper, Alert } from '../components/ui';
 
 const OrderPage = () => {
   const { id } = useParams();
-  const _navigate = useNavigate();
   const location = useLocation();
-  const { fetchOrder } = useOrders({ immediate: false });
+  const { fetchOrder, markAsPaid } = useOrders({ immediate: false });
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState(null);
   
   // Check if this is a newly placed order (coming from checkout)
   const isNewOrder = location.state?.newOrder || false;
@@ -24,6 +25,30 @@ const OrderPage = () => {
       setLoading(false);
     });
   }, [id, fetchOrder]);
+
+  const handlePayNow = async () => {
+    setPaying(true);
+    setPayError(null);
+
+    const paymentResult = {
+      id: `PAY-${Date.now()}`,
+      status: 'COMPLETED',
+      update_time: new Date().toISOString(),
+      email_address: order.user?.email || 'customer@shopix.com',
+    };
+
+    const result = await markAsPaid(id, paymentResult);
+
+    if (result.success) {
+      // Refetch order to update all status badges
+      const refreshed = await fetchOrder(id);
+      if (refreshed.success) setOrder(refreshed.data);
+    } else {
+      setPayError(result.error || 'Payment failed');
+    }
+
+    setPaying(false);
+  };
 
   if (loading) {
     return <LoadingWrapper loading={true}><div /></LoadingWrapper>;
@@ -211,9 +236,16 @@ const OrderPage = () => {
               </div>
 
               {!order.isPaid && (
-                <button className="w-full mt-6 bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors">
-                  Pay Now
-                </button>
+                <>
+                  {payError && <Alert type="error" message={payError} className="mt-4" />}
+                  <button
+                    onClick={handlePayNow}
+                    disabled={paying}
+                    className="w-full mt-6 bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                  >
+                    {paying ? 'Processing...' : 'Pay Now'}
+                  </button>
+                </>
               )}
             </div>
           </div>

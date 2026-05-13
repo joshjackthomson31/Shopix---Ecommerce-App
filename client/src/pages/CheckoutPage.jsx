@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,14 +8,14 @@ import { Alert } from '../components/ui';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { cartItems, subtotal, tax, shipping, total, clearCart } = useCart();
+  const { cartItems, itemsCount, subtotal, tax, shipping, total, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { createOrder } = useOrders({ immediate: false });
 
   const [step, setStep] = useState(1); // 1: Shipping, 2: Payment, 3: Review
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [orderPlaced, setOrderPlaced] = useState(false); // Track if order was placed
+  const [orderPlaced, setOrderPlaced] = useState(false); // Track if order was just placed
 
   // Shipping form
   const [shippingAddress, setShippingAddress] = useState({
@@ -28,16 +28,14 @@ const CheckoutPage = () => {
   // Payment method
   const [paymentMethod, setPaymentMethod] = useState('PayPal');
 
-  // Redirect if not authenticated or cart empty (but not if order was just placed)
-  if (!isAuthenticated) {
-    navigate('/login?redirect=checkout');
-    return null;
-  }
-
-  if (cartItems.length === 0 && !orderPlaced) {
-    navigate('/cart');
-    return null;
-  }
+  // Guard redirects inside useEffect — never call navigate() during render
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=checkout');
+    } else if (cartItems.length === 0 && !orderPlaced) {
+      navigate('/cart');
+    }
+  }, [isAuthenticated, cartItems.length, orderPlaced, navigate]);
 
   const handleShippingChange = (e) => {
     setShippingAddress({
@@ -61,19 +59,13 @@ const CheckoutPage = () => {
     setError('');
 
     const orderData = {
+      // Only send product ID and qty — server resolves name, image, price from DB
       orderItems: cartItems.map((item) => ({
-        name: item.name,
-        qty: item.qty,
-        image: item.image,
-        price: item.price,
         product: item._id,
+        qty: item.qty,
       })),
       shippingAddress,
       paymentMethod,
-      itemsPrice: subtotal,
-      taxPrice: tax,
-      shippingPrice: shipping,
-      totalPrice: total,
     };
 
     const result = await createOrder(orderData);
@@ -354,7 +346,7 @@ const CheckoutPage = () => {
 
             <div className="space-y-3 text-gray-600">
               <div className="flex justify-between">
-                <span>Items ({cartItems.length})</span>
+                <span>Items ({itemsCount})</span>
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">

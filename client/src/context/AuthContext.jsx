@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services';
 import catchAsync from '../utils/catchAsync';
+import safeParse from '../utils/safeParse';
 
 const AuthContext = createContext();
 
@@ -13,11 +14,34 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  // Initialize from localStorage synchronously (no useEffect needed)
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  // Initialize from localStorage synchronously — avoids flicker on load
+  const [user, setUser] = useState(() => safeParse('user'));
+
+  // Track whether the token has been validated against the server
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // On mount: silently validate the stored token with the server
+  // If the token is expired or invalid, auto-logout to clear the stale session
+  useEffect(() => {
+    const validateToken = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) {
+        setAuthChecked(true);
+        return;
+      }
+
+      const result = await catchAsync(() => authService.getProfile())();
+      if (!result.success) {
+        // Token is invalid or expired — clear everything
+        setUser(null);
+        localStorage.removeItem('user');
+        localStorage.removeItem('cartItems');
+      }
+      setAuthChecked(true);
+    };
+
+    validateToken();
+  }, []);
 
   // Register user (never throws - returns { success, data/error })
   const register = async (name, email, password) => {
@@ -47,15 +71,16 @@ export const AuthProvider = ({ children }) => {
     return result;
   };
 
-  // Logout user
+  // Logout user — also clear cart so it doesn't carry over to another user
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('cartItems');
   };
 
   const value = {
     user,
-    loading: false, // No async loading needed - initialized from localStorage
+    authChecked,  // true once the server token validation has resolved
     register,
     login,
     logout,
