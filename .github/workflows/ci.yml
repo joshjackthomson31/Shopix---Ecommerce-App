@@ -21,11 +21,20 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install all dependencies
-        run: npm run install-all
-
-      - name: Build React frontend
-        run: npm run build
+      - name: Install and build
+        run: |
+          echo "=== npm & node versions ==="
+          node -v && npm -v
+          echo "=== Installing server deps ==="
+          npm install --prefix server
+          echo "=== Installing client deps ==="
+          npm install --prefix client
+          echo "=== Debug: checking where vite landed ==="
+          ls client/node_modules/.bin/vite 2>/dev/null && echo "FOUND in client" || echo "NOT in client"
+          ls node_modules/.bin/vite 2>/dev/null && echo "FOUND in root" || echo "NOT in root"
+          find . -name "vite" -path "*/.bin/vite" 2>/dev/null || echo "vite not found anywhere"
+          echo "=== Building frontend ==="
+          cd client && npm run build
 
   # ============ Job 2: Docker Build ============
   docker:
