@@ -7,9 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  # ============ Job 1: Build & Test ============
+  # ============ Job 1: Lint & Build ============
   build:
-    name: Build & Verify
+    name: Lint & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -20,35 +20,73 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
 
-      - name: Install and build
-        run: |
-          echo "=== npm & node versions ==="
-          node -v && npm -v
-          echo "=== Installing server deps ==="
-          npm install --prefix server
-          echo "=== Installing client deps ==="
-          npm install --prefix client
-          echo "=== Debug: checking where vite landed ==="
-          ls client/node_modules/.bin/vite 2>/dev/null && echo "FOUND in client" || echo "NOT in client"
-          ls node_modules/.bin/vite 2>/dev/null && echo "FOUND in root" || echo "NOT in root"
-          find . -name "vite" -path "*/.bin/vite" 2>/dev/null || echo "vite not found anywhere"
-          echo "=== Building frontend ==="
-          cd client && npm run build
+      - name: Install all dependencies
+        run: npm run install-all
 
-  # ============ Job 2: Docker Build ============
+      - name: Lint frontend
+        run: cd client && npm run lint
+
+      - name: Build React frontend
+        run: npm run build
+
+  # ============ Job 2: Security Audit ============
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      - name: Install all dependencies
+        run: npm run install-all
+
+      - name: Audit server dependencies
+        run: cd server && npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Audit client dependencies
+        run: cd client && npm audit --audit-level=high
+        continue-on-error: true
+
+  # ============ Job 3: Docker Build ============
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build Docker image
-        run: docker build -t shopix:${{ github.sha }} .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: |
+            shopix:${{ github.sha }}
+            shopix:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Verify Docker image
-        run: docker images shopix:${{ github.sha }}
+        run: docker images shopix

@@ -1,6 +1,7 @@
 // Import dependencies
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
@@ -28,6 +29,9 @@ const app = express();
 // ============ MIDDLEWARE ============
 // Middleware are functions that run BEFORE your routes
 
+// Set secure HTTP headers (Content-Security-Policy, X-Frame-Options, HSTS, etc.)
+app.use(helmet());
+
 // Enable CORS — restrict to the configured frontend origin (never allow all in production)
 app.use(
   cors({
@@ -36,8 +40,8 @@ app.use(
   })
 );
 
-// Parse JSON bodies (when client sends JSON data, we can read it)
-app.use(express.json());
+// Parse JSON bodies — limit size to prevent large-payload DoS attacks
+app.use(express.json({ limit: '10kb' }));
 
 // Serve uploaded files as static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
