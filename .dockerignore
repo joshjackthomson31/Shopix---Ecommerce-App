@@ -3,6 +3,11 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
+# Lock files (regenerated inside container for correct platform bindings)
+package-lock.json
+client/package-lock.json
+server/package-lock.json
+
 # Environment files (secrets should not be in the image)
 .env
 .env.local
