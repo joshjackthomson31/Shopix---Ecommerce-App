@@ -1,6 +1,7 @@
 // Import dependencies
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
@@ -28,6 +29,9 @@ const app = express();
 // ============ MIDDLEWARE ============
 // Middleware are functions that run BEFORE your routes
 
+// Set secure HTTP headers (Content-Security-Policy, X-Frame-Options, HSTS, etc.)
+app.use(helmet());
+
 // Enable CORS — restrict to the configured frontend origin (never allow all in production)
 app.use(
   cors({
@@ -36,8 +40,8 @@ app.use(
   })
 );
 
-// Parse JSON bodies (when client sends JSON data, we can read it)
-app.use(express.json());
+// Parse JSON bodies — limit size to prevent large-payload DoS attacks
+app.use(express.json({ limit: '10kb' }));
 
 // Serve uploaded files as static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -46,10 +50,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Test route - just to check if server is working
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'E-Commerce API is running!',
     version: '1.0.0'
   });
+});
+
+// Health check endpoint — used by deployment platforms to verify the app is alive
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Auth routes (register, login)
@@ -63,6 +72,17 @@ app.use('/api/orders', orderRoutes);
 
 // Upload route (for product images)
 app.use('/api/upload', uploadRoutes);
+
+// ============ PRODUCTION — SERVE REACT BUILD ============
+// In production, Express serves the React frontend (no separate Vite dev server)
+if (config.isProd) {
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+
+  // Any route that isn't an API route → serve React's index.html (for client-side routing)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
+}
 
 // ============ ERROR HANDLING ============
 // Must be after all routes

@@ -5,7 +5,8 @@ A full-stack e-commerce application built with the MERN stack (MongoDB, Express,
 ## Tech Stack
 
 **Frontend:** React 19, Tailwind CSS 4, React Router 7, Axios, Fuse.js  
-**Backend:** Node.js, Express 5, Mongoose 9, JWT, Multer  
+**Backend:** Node.js, Express 5, Mongoose 9, JWT, Multer, Helmet  
+**DevOps:** Docker (multi-stage), Docker Compose, GitHub Actions CI/CD  
 **Database:** MongoDB
 
 ## Features
@@ -27,6 +28,8 @@ A full-stack e-commerce application built with the MERN stack (MongoDB, Express,
 **Security**
 - Passwords hashed with bcrypt (never stored in plain text)
 - JWT authentication with server-side token validation on app load
+- Helmet HTTP security headers (CSP, HSTS, X-Frame-Options, etc.)
+- JSON body size limit to prevent large-payload DoS
 - Server-side price calculation — prices fetched from DB, never trusted from client
 - Stock validation and auto-decrement on order placement
 - Rate limiting on login/register (10 attempts per 15 min)
@@ -40,6 +43,13 @@ A full-stack e-commerce application built with the MERN stack (MongoDB, Express,
 - Global Express error handler (Mongoose, JWT, and validation errors)
 - Safe localStorage parsing to prevent corrupted data crashes
 - Consistent API response format across all endpoints
+
+**DevOps**
+- Multi-stage Docker build (build frontend → production server image)
+- Docker Compose with MongoDB auth, health checks, and internal networking
+- 3-job GitHub Actions CI/CD: Lint & Build → Security Audit → Docker Build
+- npm dependency caching and Docker layer caching (Buildx + GHA cache)
+- Health check endpoint (`/api/health`) for container orchestration
 
 ## API Endpoints (17)
 
@@ -148,4 +158,7 @@ CORS_ORIGIN=http://localhost:5173
 | `npm run dev` | Start both client and server |
 | `npm run server` | Start backend only (nodemon) |
 | `npm run client` | Start frontend only (vite) |
+| `npm run build` | Build React frontend for production |
 | `npm run install-all` | Install all dependencies |
+| `docker compose up --build` | Build and run with Docker Compose |
+| `docker compose down` | Stop all containers |

@@ -33,6 +33,8 @@ Use this document to explain your project to interviewers clearly and confidentl
 | **Password Hashing** | bcrypt | Industry-standard one-way hashing with salt |
 | **File Upload** | Multer | Handles multipart form data for image uploads |
 | **Rate Limiting** | express-rate-limit | Prevents brute-force attacks on login/register |
+| **Security Headers** | Helmet | Sets CSP, HSTS, X-Frame-Options, and other HTTP security headers |
+| **DevOps** | Docker, GitHub Actions | Multi-stage Docker build, 3-job CI/CD pipeline |
 | **Dev Tools** | Vite, Nodemon, Concurrently | Fast builds, auto-reload, run client + server together |
 
 ---
@@ -347,6 +349,8 @@ This keeps components clean and API logic reusable.
 |---|---|
 | bcrypt password hashing (salt rounds: 10) | Even if the database is compromised, passwords can't be read |
 | `password: select: false` in schema | Password is never included in database query results by default |
+| Helmet HTTP security headers | Sets Content-Security-Policy, HSTS, X-Frame-Options, etc. out of the box |
+| JSON body size limit (10kb) | Prevents large-payload Denial of Service attacks |
 | Server-side price calculation | Users can't manipulate prices by editing the browser |
 | Stock validation before order creation | Prevents ordering more than what's available |
 | JWT token validation on app load | Stale tokens from previous sessions are detected and cleared |
@@ -405,7 +409,13 @@ These are things I consciously chose not to build, but I know how I would:
 > For an e-commerce app, MongoDB's flexible schema works well because different product categories can have different attributes. The embedded reviews pattern avoids joins for common queries. For a project with complex relational data (like banking), I'd choose PostgreSQL.
 
 **Q: How would you deploy this?**
-> Frontend on Vercel or Netlify (static build). Backend on Railway, Render, or AWS EC2. MongoDB on MongoDB Atlas (already using it for development). Environment variables for secrets. I'd add a CI/CD pipeline with GitHub Actions to run tests before deploying.
+> I've already set this up. The project has a multi-stage Dockerfile — Stage 1 builds the React frontend, Stage 2 sets up the production Node.js server with only production dependencies and copies the built frontend. Docker Compose orchestrates the app container and a MongoDB container with authentication enabled, health checks, and automatic restarts. I have a 3-job CI/CD pipeline in GitHub Actions: Job 1 lints and builds the frontend, Job 2 runs `npm audit` for security vulnerabilities, and Job 3 builds the Docker image using Buildx with GitHub Actions cache for faster builds. The Docker job only runs on `main` branch pushes after both lint and security jobs pass.
+
+**Q: Walk me through your CI/CD pipeline.**
+> It has three parallel-then-sequential jobs. The `build` job installs dependencies with npm caching, runs ESLint on the frontend, and builds the React production bundle — this catches syntax errors and build failures early. The `security` job runs `npm audit` on both client and server dependencies to flag known CVEs. These two run in parallel. The `docker` job depends on both — it only runs on pushes to main (not PRs). It uses Docker Buildx with GitHub Actions cache (`cache-from: type=gha`) to avoid rebuilding unchanged layers, then builds and tags the image with both the commit SHA and `latest`.
+
+**Q: Explain your Docker setup.**
+> The Dockerfile uses a multi-stage build to keep the production image small. Stage 1 uses `node:20-alpine` to install frontend dependencies and run `vite build`. Stage 2 starts fresh — installs only server production dependencies (`npm ci --omit=dev`), copies the server code and the built React `dist` folder from Stage 1. The final image doesn't have any dev dependencies, source maps, or build tools. Docker Compose adds MongoDB with authentication enabled (`MONGO_INITDB_ROOT_USERNAME/PASSWORD`), health checks on both services so the app container waits until MongoDB is ready, and `restart: unless-stopped` for resilience. MongoDB's port is not exposed to the host — only the app container can reach it through Docker's internal network.
 
 ---
 
