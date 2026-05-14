@@ -20,16 +20,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: |
-            server/package-lock.json
-            client/package-lock.json
 
       - name: Install server dependencies
-        run: cd server && npm ci
+        run: cd server && npm install
 
       - name: Install client dependencies
-        run: cd client && npm ci
+        run: cd client && npm install
 
       - name: Build React frontend
         run: cd client && npm run build
