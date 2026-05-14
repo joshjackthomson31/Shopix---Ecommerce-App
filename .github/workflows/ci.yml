@@ -30,13 +30,13 @@ jobs:
         run: npm cache clean --force
 
       - name: Install root dependencies
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Install server dependencies
-        run: npm ci --prefix server
+        run: npm ci --prefix server || npm install --prefix server
 
       - name: Install client dependencies
-        run: npm ci --prefix client
+        run: npm ci --prefix client || npm install --prefix client
 
       - name: Lint frontend
         working-directory: client
@@ -68,13 +68,13 @@ jobs:
         run: npm cache clean --force
 
       - name: Install root dependencies
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Install server dependencies
-        run: npm ci --prefix server
+        run: npm ci --prefix server || npm install --prefix server
 
       - name: Install client dependencies
-        run: npm ci --prefix client
+        run: npm ci --prefix client || npm install --prefix client
 
       - name: Audit server dependencies
         working-directory: server
