@@ -30,7 +30,8 @@ jobs:
         run: npm ci && npm run ci-all
 
       - name: Lint frontend
-        run: cd client && npx eslint .
+        working-directory: client
+        run: npm run lint
 
       - name: Build React frontend
         run: npm run build
@@ -58,11 +59,13 @@ jobs:
         run: npm ci && npm run ci-all
 
       - name: Audit server dependencies
-        run: cd server && npm audit --audit-level=high
+        working-directory: server
+        run: npm audit --audit-level=high
         continue-on-error: true
 
       - name: Audit client dependencies
-        run: cd client && npm audit --audit-level=high
+        working-directory: client
+        run: npm audit --audit-level=high
         continue-on-error: true
 
   # ============ Job 3: Docker Build ============
