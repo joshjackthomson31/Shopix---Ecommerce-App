@@ -21,21 +21,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install server dependencies
-        working-directory: server
-        run: npm install
-
-      - name: Install client dependencies
-        working-directory: client
-        run: npm install
-
-      - name: Verify vite installed
-        working-directory: client
-        run: ls node_modules/.bin/vite && echo "vite found" || echo "vite NOT found"
+      - name: Install all dependencies
+        run: npm run install-all
 
       - name: Build React frontend
-        working-directory: client
-        run: npx vite build
+        run: npm run build
 
   # ============ Job 2: Docker Build ============
   docker:
