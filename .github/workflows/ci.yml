@@ -26,8 +26,17 @@ jobs:
             server/package-lock.json
             client/package-lock.json
 
-      - name: Install all dependencies
-        run: npm ci && npm run ci-all
+      - name: Clear npm cache
+        run: npm cache clean --force
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      - name: Install client dependencies
+        run: npm ci --prefix client
 
       - name: Lint frontend
         working-directory: client
@@ -55,8 +64,17 @@ jobs:
             server/package-lock.json
             client/package-lock.json
 
-      - name: Install all dependencies
-        run: npm ci && npm run ci-all
+      - name: Clear npm cache
+        run: npm cache clean --force
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      - name: Install client dependencies
+        run: npm ci --prefix client
 
       - name: Audit server dependencies
         working-directory: server
