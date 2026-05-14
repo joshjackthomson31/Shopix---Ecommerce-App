@@ -3,9 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app/client
 
-# Install dependencies first (cached unless package.json changes)
-COPY client/package*.json ./
-RUN npm ci
+# Copy package.json and install (lock file excluded via .dockerignore)
+COPY client/package.json ./
+RUN npm install
 
 # Copy source and build
 COPY client/ ./
@@ -17,8 +17,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install server dependencies only (no devDependencies)
-COPY server/package*.json ./server/
-RUN cd server && npm ci --omit=dev
+COPY server/package.json ./server/
+RUN cd server && npm install --omit=dev
 
 # Copy server source code
 COPY server/ ./server/
