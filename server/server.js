@@ -46,10 +46,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Test route - just to check if server is working
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'E-Commerce API is running!',
     version: '1.0.0'
   });
+});
+
+// Health check endpoint — used by deployment platforms to verify the app is alive
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Auth routes (register, login)
@@ -63,6 +68,17 @@ app.use('/api/orders', orderRoutes);
 
 // Upload route (for product images)
 app.use('/api/upload', uploadRoutes);
+
+// ============ PRODUCTION — SERVE REACT BUILD ============
+// In production, Express serves the React frontend (no separate Vite dev server)
+if (config.isProd) {
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+
+  // Any route that isn't an API route → serve React's index.html (for client-side routing)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
+}
 
 // ============ ERROR HANDLING ============
 // Must be after all routes

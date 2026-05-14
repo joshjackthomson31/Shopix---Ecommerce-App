@@ -17,8 +17,8 @@ const config = {
   // Database
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce',
 
-  // JWT
-  jwtSecret: process.env.JWT_SECRET || 'fallback_secret_change_in_production',
+  // JWT — no fallback; app must crash if secret is missing
+  jwtSecret: process.env.JWT_SECRET,
   jwtExpire: process.env.JWT_EXPIRE || '30d',
 
   // Upload
@@ -29,11 +29,15 @@ const config = {
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
 };
 
-// Validate required config in production
+// Validate required config — crash early if secrets are missing
+if (!config.jwtSecret) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
 if (config.isProd) {
-  const required = ['MONGO_URI', 'JWT_SECRET'];
+  const required = ['MONGO_URI', 'CORS_ORIGIN'];
   const missing = required.filter((key) => !process.env[key]);
-  
+
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }

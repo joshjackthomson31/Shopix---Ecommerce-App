@@ -1,0 +1,40 @@
+# Dependencies (installed inside the container)
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment files (secrets should not be in the image)
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.example
+
+# Git
+.git/
+.gitignore
+
+# Build outputs (rebuilt inside the container)
+client/dist/
+client/build/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Docker files (no need to copy themselves)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test and coverage
+coverage/
