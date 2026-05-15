@@ -79,7 +79,8 @@ if (config.isProd) {
   app.use(express.static(path.join(__dirname, '../client/dist')));
 
   // Any route that isn't an API route → serve React's index.html (for client-side routing)
-  app.get('*', (req, res) => {
+  // Express 5 requires named wildcard parameter instead of bare '*'
+  app.get('{*path}', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
   });
 }
