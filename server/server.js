@@ -48,13 +48,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============ ROUTES ============
 
-// Test route - just to check if server is working
-app.get('/', (req, res) => {
-  res.json({
-    message: 'E-Commerce API is running!',
-    version: '1.0.0'
+// Test route - just to check if server is working (only in development)
+if (config.isDev) {
+  app.get('/', (req, res) => {
+    res.json({
+      message: 'E-Commerce API is running!',
+      version: '1.0.0'
+    });
   });
-});
+}
 
 // Health check endpoint — used by deployment platforms to verify the app is alive
 app.get('/api/health', (req, res) => {
